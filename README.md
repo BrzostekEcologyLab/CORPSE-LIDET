@@ -1,6 +1,8 @@
 # CORPSE-LIDET
 CORPSE model with LIDET-derived litter decomposition parameters
 
+[![DOI](https://zenodo.org/badge/523086274.svg)](https://zenodo.org/badge/latestdoi/523086274)
+
 **Description:**<br> This is a version of the CORPSE model (Carbon, Organisms, Rhizosphere and Protection in the Soil Environment, Sulman et al. 2014, Sulman et al. 2017) that uses litter decomposition parameters derived from a modified Monte Carlo simulation using the LIDET litter decomposition dataset (Long-term Intersite Decomposition Experiment Team, Harmon 2013).
 
 **Creators:**<br> Stephanie Juice, Joanna Ridgeway, Melannie Hartman, William Parton, Danielle Berardi, Benjamin Sulman, Kara Allen, and Edward Brzostek
