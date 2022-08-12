@@ -1,0 +1,26 @@
+cff-version: 1.0.0
+message: If you use this software, please cite it as below.
+references:
+  - type: software
+    authors:
+      - family-names: Juice
+        given-names: Stephanie
+      - family-names: Ridgeway
+        given-names: Joanna
+      - family-names: Hartman
+        given-names: Melannie
+      - family-names: Parton
+        given-names: William
+      - family-names: Berardi
+        given-names: Danielle
+      - family-names: Sulman
+        given-names: Benjamin
+      - family-names: Allen
+        given-names: Kara
+      - family-names: Brzostek
+        given-names: Edward
+    title: CORPSE-LIDET
+    doi: 10.5281/zenodo.6986980
+    repository-code: https://github.com/BrzostekEcologyLab/CORPSE-LIDET
+    date-published: 2022-08-12
+    license: BSD 3-Clause
