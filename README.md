@@ -1,9 +1,9 @@
 # CORPSE-LIDET
-CORPSE model with LIDET-derived litter decomposition parameters
+CORPSE model with LIDET-derived litter decomposition parameters 
 
 [![DOI](https://zenodo.org/badge/523086274.svg)](https://zenodo.org/badge/latestdoi/523086274)
 
-**Description:**<br> This is a version of the CORPSE model (Carbon, Organisms, Rhizosphere and Protection in the Soil Environment, Sulman et al. 2014, Sulman et al. 2017) that uses litter decomposition parameters derived from a modified Monte Carlo simulation using the LIDET litter decomposition dataset (Long-term Intersite Decomposition Experiment Team, Harmon 2013).
+**Description:**<br> This is a version of the CORPSE model (Carbon, Organisms, Rhizosphere and Protection in the Soil Environment, Sulman et al. 2014, Sulman et al. 2017) that uses litter decomposition parameters derived from a modified Monte Carlo simulation using the LIDET litter decomposition dataset (Long-term Intersite Decomposition Experiment Team, Harmon 2013). The code also includes the Baseline parameters, and the 8 other best parameter sets identified in the modified Monte Carlo simulation.
 
 **Creators:**<br> Stephanie Juice, Joanna Ridgeway, Melannie Hartman, William Parton, Danielle Berardi, Benjamin Sulman, Kara Allen, and Edward Brzostek
 
@@ -16,7 +16,7 @@ Juice, S.M., Ridgeway, J.R., Hartman, M.D., Parton, W.J., Berardi, D.M., Sulman,
 
 **Accompanying files**:<br> The folder "Input Files" contains one folder for each LIDET site with data necessary to run the model. *Note that "(site)" in the filenames below indicates where the LIDET site code appears (see Table 1 for site codes).* Data streams include: 
 
-1. **CORPSE_full_spinup_litter.csv, CORPSE_full_spinup_rhizo.csv, CORPSE_full_spinup_bulk.csv, litter_(site)_DayCent.csv:** initial C and N (kg C or N/m<sup>2</sup>) pool values for each soil layer, the DayCent file is for the litterbag layer.
+1. **CORPSE_full_spinup_litter.csv, CORPSE_full_spinup_rhizo.csv, CORPSE_full_spinup_bulk.csv, litterbag_init_100g_6spp.csv:** initial C and N (kg C or N/m<sup>2</sup>) pool values for each soil layer, the litterbag_init_100_6spp.csv file is for the litterbag layer and is the same file for all sites.
 
 	All initial C and N files have the same columns:
 
@@ -55,11 +55,13 @@ Juice, S.M., Ridgeway, J.R., Hartman, M.D., Parton, W.J., Berardi, D.M., Sulman,
 \
 **Instructions:** 
 
-1) Save the model code (“CORPSE_LIDET Params.R”) and accompanying folders ("Input Files" and "results_BESTparams") in the same folder. 
+1) Save the model code (“CORPSE_LIDET.R”) and "Input Files" folder in the same folder. Also make a folder for the model output (e.g., "results_Baseline") in the same folder. 
 
 2) Set the working directory (setwd) in the model code to the folder with the files saved in step #1.
+   
+4) Select the parameter set to use for the litter and litterbag compartments, comment out all other parameter sets. 
 
-3) Run code. Output will be saved in the folder "results_BESTparams."
+5) Run code. Output will be saved in the folder made in step 1. Output destination can be changed as necessary in code section called "Running the model."
 
 \
 \
@@ -68,19 +70,15 @@ Juice, S.M., Ridgeway, J.R., Hartman, M.D., Parton, W.J., Berardi, D.M., Sulman,
 | **Site Code**    | **Site** | 
 | -------------- | -----------|
 |AND| H.J. Andrews Experimental Forest	|
-|BCI| Barro Colorado Island	
 |BNZ| Bonanza Creek Experimental Forest	
 |BSF| Blodgett Research Forest	
 |CDR| Cedar Creek Natural History Area	
 |CPR| Central Plains Experimental Range	
-|GSF| Guanica State Forest	
 |HBR| Hubbard Brook Experimental Forest	
 |HFR| Harvard Forest	
 |JUN| Juneau	
 |KBS| Kellogg Biological Station	
 |KNZ| Konza Prairie Research Natural Area	
-|LBS| La Selva Biological Station	
-|LUQ| Luquillo Experimental Forest	
 |NWT| Niwot Ridge/Green Lakes Valley	
 |OLY| Olympic National Park	OLY	Conifer forest	
 |SEV| Sevilleta National Wildlife Refuge	
@@ -90,28 +88,14 @@ Juice, S.M., Ridgeway, J.R., Hartman, M.D., Parton, W.J., Berardi, D.M., Sulman,
 
 \
 \
-**Table 2** LIDET species and species codes used in model files. 
+**Table 2** LIDET species and species codes used in model files (6 common species). 
 
 | **Species**    | **Species Code** | 
 | -------------- | -----------|
-Subalpine fir (Abies lasiocarpa)	|	ABLA
 Sugar maple (Acer saccharum)	|	ACSA
-American beach grass (Ammophila breviligulata)	|	AMBR
-Big bluestem (Andropogon gerardii)	|	ANGE
-Black grama (Bouteloua eriopoda)	|	BOER
-Blue grama (Bouteloua gracilis)	|	BOGR
-Desert ceanothus (Ceanothus greggii)	|	CEGR
 Drypetes (Drypetes glauca)	|	DRGL
-American beech (Fagus grandifolia)	|	FAGR
-Kobresia (Kobresia myosuroides)	|	KOMY
-Creosote bush (Larrea tridentata)	|	LATR
-Tulip poplar (Liriodendron tulipifera)	|	LITU
-Slash pine (Pinus elliottii)	|	PIEL
 Red pine (Pinus resinosa)	|	PIRE
-Eastern white pine (Pinus strobus)	|	PIST
 Chestnut oak (Quercus prinus)	|	QUPR
-Pacific rhododendron (Rhododendron macrophyllum)	|	RHMA
-Spartina (Spartina alterniflora)	|	SPAL
 Western redcedar (Thuja plicata)	|	THPL
 Wheat (Triticum aestivum)	|	TRAE
 
