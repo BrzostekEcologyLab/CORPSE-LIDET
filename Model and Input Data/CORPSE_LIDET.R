@@ -1,24 +1,136 @@
-### This code models C loss during decomposition of leaf litters in the LIDET experiment
-# using the new LIDET leaf litter decomposition parameters derived through a modified Monte Carlo. 
+### This code models C loss during decomposition of leaf litters in the LIDET experiment with the CORPSE model
 
-#Remove all functions, clear memory
+# the code has options to use either baseline, LIDET, or any of the other 8 best parameter sets identified in the 
+# modified Monte Carlo analysis for litter decomposition in the litter and litterbag layers
+
+# V2
+# C and N data get exported as model output 
+
+# NOTE: This code has various options for litter decomposition parameter sets, 
+#       the desired one needs to be uncommented to run (and all others commented)
+
+# Remove all functions, clear memory
 rm(list=ls(all=TRUE)) 
 
-#Load Packages
+# Load Packages
 library(readr)
+library(dplyr)
 
 # set the working directory
-setwd("") # add filepath to working directory
+setwd() # add the filepath for the working directory
 
-##Define new LIDET Parameters (#CORPSE baseline parameters included as comments)
 
-Vmaxreffast<-2#33
-Vmaxrefslow<-0.35#0.6
-Easlow<-25E3#30E3
-eupslow<-0.001#0.1
-kCfast<-0.007#0.01
-kCslow<-0.005#0.01
-kCnecro<-0.007#0.01
+# Set the parameters for the run
+# params data table below is for litterbag and litter with LIDET or baseline parameters, or other 8 sets
+# params_bulk data table has only the baseline parameters for the bulk and rhizosphere
+
+# Vector of sites
+sites<- c("AND","BNZ","BSF","CDR","CPR","HBR","HFR","JUN","KBS","KNZ","NWT","OLY","SEV","SMR","UFL","VCR")
+
+# Define BASELINE Parameters 
+paramset <- "Baseline" # used to name files at end of run
+Vmaxreffast <- 33 
+Vmaxrefslow <- 0.6 
+Easlow <- 30E3 
+kCfast <- 0.01 
+kCslow <- 0.01 
+kCnecro <- 0.01 
+eupslow <- 0.1 
+
+# Define new LIDET Parameters 
+# paramset <- "LIDET" # (this is set 108, "LIDET" used to name files at end of run)
+# Vmaxreffast <- 2.5
+# Vmaxrefslow <- 0.35
+# Easlow <- 32.5e3
+# kCfast <- 0.007
+# kCslow <-  0.007
+# kCnecro <- 0.009
+# eupslow <- 0.1
+
+# Set 13
+# paramset <- "Set13" # used to name files at end of run
+# Vmaxreffast <- 3.25
+# Vmaxrefslow <- 0.35
+# Easlow <- 25e3
+# kCfast <- 0.015
+# kCslow <-  0.015
+# kCnecro <- 0.01
+# eupslow <- 0.02
+  
+# Set 31
+# paramset <- "Set31" # used to name files at end of run
+# Vmaxreffast <- 2
+# Vmaxrefslow <- 0.3
+# Easlow <- 35e3
+# kCfast <- 0.01
+# kCslow <-  0.011
+# kCnecro <- 0.011
+# eupslow <- 0.04
+
+# Set 64 
+# paramset <- "Set64" # used to name files at end of run
+# Vmaxreffast <- 2.75
+# Vmaxrefslow <- 0.35
+# Easlow <- 35e3
+# kCfast <- 0.009
+# kCslow <-  0.011
+# kCnecro <- 0.011
+# eupslow <- 0.001
+
+# Set 75
+# paramset <- "Set75" # used to name files at end of run
+# Vmaxreffast <- 3.25
+# Vmaxrefslow <- 0.35
+# Easlow <- 25e3
+# kCfast <- 0.011
+# kCslow <-  0.005
+# kCnecro <- 0.01
+# eupslow <- 0.02
+
+# Set 113
+# paramset <- "Set113" # used to name files at end of run
+# Vmaxreffast <- 2 
+# Vmaxrefslow <- 0.35 
+# Easlow <- 25E3 
+# eupslow <- 0.001 
+# kCfast <- 0.007 
+# kCslow <- 0.005 
+# kCnecro <- 0.007 
+
+
+# Set 120
+# paramset <- "Set120" # used to name files at end of run
+# Vmaxreffast <- 2.5
+# Vmaxrefslow <- 0.35
+# Easlow <- 25e3
+# kCfast <- 0.015
+# kCslow <-  0.005
+# kCnecro <- 0.01
+# eupslow <- 0.01
+
+# Set 122
+# paramset <- "Set122" # used to name files at end of run
+# Vmaxreffast <- 3
+# Vmaxrefslow <- 0.3
+# Easlow <- 25e3
+# kCfast <- 0.007
+# kCslow <- 0.007
+# kCnecro <- 0.011
+# eupslow <- 0.1
+
+# Set 134
+# paramset <- "Set134" # used to name files at end of run
+# Vmaxreffast <- 2
+# Vmaxrefslow <- 0.2
+# Easlow <- 25e3
+# kCfast <- 0.01
+# kCslow <-  0.015
+# kCnecro <- 0.009
+# eupslow <- 0.02
+
+
+# set the number of sites for the loop
+nsites <- as.numeric(length(sites))
 
 
 # CORPSE functions -----------------------------------------
@@ -289,11 +401,17 @@ kCnecro<-0.007#0.01
     
     turnover_N_slow <- deadmic_N_production * params$frac_turnover_slow
     
-    derivs['uNecroN'] <- derivs['uNecroN'] + deadmic_N_production - turnover_N_min-turnover_N_slow
+    non_assimilated_N <- vector(mode = 'numeric', length = 1)
+    
+    for (ctypes in chem_types) { 
+      non_assimilated_N <- non_assimilated_N + decomp[[paste(ctypes,'N',sep='')]] * (1.0 - params[[paste('nup',ctypes,sep='_')]])
+    }
+    
+    derivs['uNecroN'] <- derivs['uNecroN'] + deadmic_N_production - turnover_N_min - turnover_N_slow
     
     derivs['uSlowN'] <- derivs['uSlowN'] + turnover_N_slow
     
-    derivs['inorganicN'] <- derivs['inorganicN']+turnover_N_min
+    derivs['inorganicN'] <- derivs['inorganicN'] + turnover_N_min + non_assimilated_N
     
     return(derivs)
   }
@@ -304,7 +422,7 @@ kCnecro<-0.007#0.01
   
   ##Function Definition: 
   ##Inputs have been separated out 
-  CORPSE_loop <- function(nyears,nspp,ten_g_litter_added,CORPSE_full_spinup_litter,CORPSE_full_spinup_bulk,CORPSE_full_spinup_rhizo,litter_production,froot_turnover,root_prod,litter_CN,root_CN,soil_T,soil_VWC){
+  CORPSE_loop <- function(nyears,nspp,litter_added,CORPSE_full_spinup_litter,CORPSE_full_spinup_bulk,CORPSE_full_spinup_rhizo,litter_production,froot_turnover,root_prod,litter_CN,root_CN,soil_T,soil_VWC){
     
     #Function Variables:
     timestep <- nyears*365
@@ -313,8 +431,8 @@ kCnecro<-0.007#0.01
     inorg_Ndep <- 0.01 # inorganic N deposition. 
     
     #Input files: these are read in below under "Running the model"
-    # adding 10g in litterbag
-    litterbag_int<-ten_g_litter_added
+    # adding 100g in litterbag
+    litterbag_int <- litter_added
     #Initial Data
     litter_int <- (CORPSE_full_spinup_litter)
     bulk_int <- (CORPSE_full_spinup_bulk)
@@ -336,8 +454,8 @@ kCnecro<-0.007#0.01
     soilT <- as.matrix((soil_T))
     soilVWC <- as.matrix((soil_VWC))
     
-    # fast fraction
-    litter_fastfrac <- as.matrix(litter_int[,1])
+    # calculate fast fraction (0-1) based on 100 g of litter added
+    litter_fastfrac <- as.matrix(litter_int[,1]*10)
     
     ## Make an empty data frame with column names for pools (unprotected and protected) and chem_types (Fast, Slow, Necro) for each soil compartment
     litter <- 
@@ -464,30 +582,22 @@ kCnecro<-0.007#0.01
       ##Running the CORPSE function for LIDET data
       # Litter Layer
       litter$inorganicN <- shared_inorganicN
-      
       results_litter <- CORPSE_lidet(litter, T_step, theta_step, params, claymod) 
-      
       shared_inorganicN <- shared_inorganicN + CORPSEstep*results_litter$inorganicN
       
       # Litterbag layer
       litterbag$inorganicN <- shared_inorganicN
-      
       results_litterbag <- CORPSE_lidet(litterbag, T_step, theta_step, params, claymod) 
-      
       shared_inorganicN <- shared_inorganicN + CORPSEstep*results_litterbag$inorganicN
       
       # Bulk
       bulk$inorganicN <- shared_inorganicN
-      
       results_bulk <- CORPSE_lidet(bulk, T_step, theta_step, params_bulk, claymod) 
-      
       shared_inorganicN <- shared_inorganicN + CORPSEstep*results_bulk$inorganicN
       
-      # RHIZO
+      # Rhizo
       rhizo$inorganicN <- shared_inorganicN
-      
       results_rhizo <- CORPSE_lidet(rhizo, T_step, theta_step, params_bulk, claymod) 
-      
       shared_inorganicN <- shared_inorganicN + CORPSEstep*results_rhizo$inorganicN
       
       
@@ -524,6 +634,7 @@ kCnecro<-0.007#0.01
       litter_inorganicN[i,]<-litter$inorganicN
       litter_CO2[i,]<-litter$CO2
       litter_livingMicrobeN[i,]<-litter$livingMicrobeN
+      
       litterbag_uFastC[i,]<-litterbag$uFastC
       litterbag_uSlowC[i,]<-litterbag$uSlowC
       litterbag_uNecroC[i,]<-litterbag$uNecroC
@@ -540,6 +651,7 @@ kCnecro<-0.007#0.01
       litterbag_inorganicN[i,]<-litterbag$inorganicN
       litterbag_CO2[i,]<-litterbag$CO2
       litterbag_livingMicrobeN[i,]<-litterbag$livingMicrobeN
+      
       bulk_uFastC[i,]<-bulk$uFastC
       bulk_uSlowC[i,]<-bulk$uSlowC
       bulk_uNecroC[i,]<-bulk$uNecroC
@@ -556,6 +668,7 @@ kCnecro<-0.007#0.01
       bulk_inorganicN[i,]<-bulk$inorganicN
       bulk_CO2[i,]<-bulk$CO2
       bulk_livingMicrobeN[i,]<-bulk$livingMicrobeN
+      
       rhizo_uFastC[i,]<-rhizo$uFastC
       rhizo_uSlowC[i,]<-rhizo$uSlowC
       rhizo_uNecroC[i,]<-rhizo$uNecroC
@@ -605,14 +718,14 @@ kCnecro<-0.007#0.01
       }
       
       ##Transfer a portion of the litter layer to the bulk and rhizosphere each time step
-      newsoil<-litter*litter_transfer_to_soil
-      rhizo<-rhizo+(newsoil*(rhizo_frac))
-      bulk<-bulk+(newsoil*(1-rhizo_frac))
-      litter<-litter-(litter*litter_transfer_to_soil)
+      newsoil <- litter * litter_transfer_to_soil
+      rhizo <- rhizo + (newsoil * (rhizo_frac))
+      bulk <- bulk + (newsoil * (1-rhizo_frac))
+      litter <- litter - (litter * litter_transfer_to_soil)
       
       
       ##Add in non mycorrhizal C flux to rhizosphere
-      rhizo$uFastC<-rhizo$uFastC+rhizoC_flux
+      rhizo$uFastC <- rhizo$uFastC + rhizoC_flux
       
       
     }
@@ -632,19 +745,13 @@ kCnecro<-0.007#0.01
 
   
   ##INPUT DATA
-
-  sites<-c("AND","BCI","BNZ","BSF","CDR","CPR","CWT","GSF","HBR","HFR","JRN","JUN","KBS","KNZ","LBS","LUQ","NWT","OLY","SEV","SMR","UFL","VCR")
-  
-  nsites<-as.numeric(length(sites))
-  
   ##Reads in input data, runs the model, and writes export data to files for each site
   for(i in 1:nsites){
 
-    dir.create(paste("results_BESTparams/",sites[i],"results",sep="")) # need folder "results_BESTparams" in working directory
-    dir2<-paste("results_BESTparams/",sites[i],"results",sep="")
-
-
-    # This reads in input variables for the function from each site. 
+    # need to have folder "results_Baseline (or results_LIDET, etc) in working directory
+    dir <- "results_Baseline/"
+    
+    # Read in input data each site. 
     # The file names for the sites must be the same except replacing site code for this to run. 
     CORPSE_full_spinup_litter <- read.csv(paste("Input Files/",sites[i],"Litterbag/CORPSE_full_spinup_litter.csv",sep=""))
     CORPSE_full_spinup_bulk <- read.csv(paste("Input Files/",sites[i],"Litterbag/CORPSE_full_spinup_bulk.csv",sep=""))
@@ -654,22 +761,89 @@ kCnecro<-0.007#0.01
     root_prod <- read.csv(paste("Input Files/",sites[i],"Litterbag/litter_production.csv",sep=""))
     litter_CN <- read.csv(paste("Input Files/",sites[i],"Litterbag/litter ",sites[i]," CN.csv",sep=""))
     root_CN <- litter_CN
-    ten_g_litter_added <- read.csv(paste("Input Files/",sites[i],"Litterbag/litter_",sites[i],"_DayCent.csv",sep=""))
-    soil_T <- read.csv(paste("Input Files/",sites[i],"Litterbag/soilT ",sites[i]," DOY274start.csv",sep=""))
-    soil_VWC <- read.csv(paste("Input Files/",sites[i],"Litterbag/soilVWC ",sites[i]," DOY274start.csv",sep=""))
+    soil_T <- read.csv(paste("Input Files/",sites[i],"Litterbag/soilT ",sites[i]," DOY274start.csv", sep=""))
+    soil_VWC <- read.csv(paste("Input Files/",sites[i],"Litterbag/soilVWC ",sites[i]," DOY274start.csv", sep=""))
+
+    # Read in litterbag with 6 spp, adds 100 g of litter, same for all sites
+    litter_added <- read.csv(paste("Input Files/","litterbag_init_100g_6spp.csv", sep=""))
     
-    ##Runs each site for length of LIDET data years - i.e. HBR runs for 6 years while HFR runs for 10 years
+    # Table of species at each site with number of years of data for each one
+    # Runs each site for length of LIDET data years - i.e. HBR runs for 6 years while HFR runs for 10 years
     sitedata <- read.csv(paste("Input Files/",sites[i],"Litterbag/",sites[i],".csv",sep=""))
     
+    # remove NAs in sitedata
+    sitedata <- na.omit(sitedata)
+    
+    # Set up data to only run 6 common species done at most sites
+    
+    # make sure the number of rows in the initial files match the number of species
+    CORPSE_full_spinup_bulk <- CORPSE_full_spinup_bulk[1:nrow(sitedata),]
+    CORPSE_full_spinup_litter <- CORPSE_full_spinup_litter[1:nrow(sitedata),]
+    CORPSE_full_spinup_rhizo <- CORPSE_full_spinup_rhizo[1:nrow(sitedata),]
+    
+    # add the column of species from "sitedata" to litter, rhizo, and bulk initial values,
+    # and litter CN and root CN, then use that to filter rows for only 6 common spp
+    CORPSE_full_spinup_bulk$spp <- sitedata$SPP 
+    CORPSE_full_spinup_litter$spp <- sitedata$SPP 
+    CORPSE_full_spinup_rhizo$spp <- sitedata$SPP 
+    litter_CN$spp <- sitedata$SPP
+    root_CN$spp <- sitedata$SPP
+    
+    # filter data for only 6 common species, and remove "spp" column
+    CORPSE_full_spinup_bulk <- 
+      CORPSE_full_spinup_bulk %>% 
+      filter(spp == "ACSA" | spp == "DRGL" | spp == "PIRE" | spp == "QUPR" | spp == "THPL"| spp == "TRAE") %>% 
+      select(-spp)
+    
+    CORPSE_full_spinup_litter <-
+      CORPSE_full_spinup_litter %>% 
+      filter(spp == "ACSA" | spp == "DRGL" | spp == "PIRE" | spp == "QUPR" | spp == "THPL"| spp == "TRAE") %>% 
+      select(-spp)
+    
+    CORPSE_full_spinup_rhizo <- 
+      CORPSE_full_spinup_rhizo %>% 
+      filter(spp == "ACSA" | spp == "DRGL" | spp == "PIRE" | spp == "QUPR" | spp == "THPL"| spp == "TRAE") %>% 
+      select(-spp)
+    
+    litter_CN <- 
+      litter_CN %>% 
+      filter(spp == "ACSA" | spp == "DRGL" | spp == "PIRE" | spp == "QUPR" | spp == "THPL"| spp == "TRAE") %>% 
+      select(-spp)
+    
+    root_CN <- 
+      root_CN %>% 
+      filter(spp == "ACSA" | spp == "DRGL" | spp == "PIRE" | spp == "QUPR" | spp == "THPL"| spp == "TRAE") %>% 
+      select(-spp)
+    
+
+    # filter sitedata for 6 common species that we present in the manuscript
+    sitedata <-
+      sitedata %>% 
+      filter(SPP == "ACSA" | SPP == "DRGL" | SPP == "PIRE" | SPP == "QUPR" | SPP == "THPL"| SPP == "TRAE")
+    
+    # Because some sites are missing some of the 6 common spp, filter the litterbag for the spp present
+    litter_added <- 
+      litter_added %>% 
+      mutate(spp = c("ACSA", "DRGL", "PIRE", "QUPR", "THPL", "TRAE")) %>% 
+      filter(spp %in% sitedata$SPP ) %>% 
+      select(-spp)
+    
+    # set columns for data equal to nspp in sitedata: froot_turnover, litter_production, root_prod
+    # all columns have the same values so just remove excess columns
+    froot_turnover <- froot_turnover[,1:nrow(sitedata)]
+    litter_production <- litter_production[,1:nrow(sitedata)]
+    root_prod <- root_prod[,1:nrow(sitedata)]
+    
+    
     ##Runs to max nyears of record for any lidet leaf at site i
-    nyears<-max(sitedata$TIMES,na.rm=TRUE)
+    nyears <- max(sitedata$TIMES,na.rm=TRUE)
     
     ##Defines nspp for each site: how many leaves have yearly data from sitedata
-    nspp<-as.numeric(length(which(!is.na(sitedata$TIMES))))
+    nspp <- as.numeric(length(which(!is.na(sitedata$TIMES))))
     
     
     ##Running the model
-    MainFunction <- CORPSE_loop(nyears, nspp, ten_g_litter_added, 
+    MainFunction <- CORPSE_loop(nyears, nspp, litter_added, 
                                 CORPSE_full_spinup_litter, CORPSE_full_spinup_bulk, 
                                 CORPSE_full_spinup_rhizo, litter_production, 
                                 froot_turnover, root_prod, litter_CN, root_CN, 
@@ -679,38 +853,7 @@ kCnecro<-0.007#0.01
     
     
     ##Model Output
-    ### Timeseries data for litterbag layer (unprotected pools only)
     
-    # litterbag_uFastC 
-    #write.csv(MainFunction$litterbag_uFastC, paste(dir2,"/CORPSE_full_litterbag run_litterbag_uFastC.csv",sep=""), row.names = FALSE)
-    
-    # litterbag_uSlowC 
-    #write.csv(MainFunction$litterbag_uSlowC, paste(dir2,"/CORPSE_full_litterbag run_litterbag_uSlowC.csv",sep=""), row.names = FALSE)
-    
-    # litterbag_uNecroC 
-    #write.csv(MainFunction$litterbag_uNecroC, paste(dir2,"/CORPSE_full_litterbag run_litterbag_uNecroC.csv",sep=""), row.names = FALSE)
-    
-    # litterbag_uFastN 
-    # write.csv(MainFunction$litterbag_uFastN, paste(dir2,"/CORPSE_full_litterbag run_litterbag_uFastN.csv",sep=""), row.names = FALSE)
-    # 
-    # # litterbag_uSlowN 
-    # write.csv(MainFunction$litterbag_uSlowN, paste(dir2,"/CORPSE_full_litterbag run_litterbag_uSlowN.csv",sep=""), row.names = FALSE)
-    # 
-    # # litterbag_uNecroN 
-    # write.csv(MainFunction$litterbag_uNecroN, paste(dir2,"/CORPSE_full_litterbag run_litterbag_uNecroN.csv",sep=""), row.names = FALSE)
-    # 
-    # # litterbag_livingMicrobeC 
-    # write.csv(MainFunction$litterbag_livingMicrobeC, paste(dir2,"/CORPSE_full_litterbag run_litterbag_livingMicrobeC.csv",sep=""), row.names = FALSE)
-    # 
-    # # litterbag_inorganicN 
-    # write.csv(MainFunction$litterbag_inorganicN, paste(dir2,"/CORPSE_full_litterbag run_litterbag_inorganicN.csv",sep=""), row.names = FALSE)
-    # 
-    # # litterbag_CO2 
-    # write.csv(MainFunction$litterbag_CO2, paste(dir2,"/CORPSE_full_litterbag run_litterbag_CO2.csv",sep=""), row.names = FALSE)
-    # 
-    # # litterbag_livingMicrobeN 
-    # write.csv(MainFunction$litterbag_livingMicrobeN, paste(dir2,"/CORPSE_full_litterbag run_litterbag_livingMicrobeN.csv",sep=""), row.names = FALSE)
-     
     # Read in LIDET observations to compare with model output
     dat_lidet_leaves <- read.csv("Input Files/LIDET_leaves.csv")
     #Lidet observed data for each site
@@ -718,97 +861,218 @@ kCnecro<-0.007#0.01
     #Add a column for DOY
     site_lidet$DOY <- site_lidet$time*365
     
-    #lidet catalogue of nyears and leaves decomposed: summary not data
-    site_leaves <- read.csv(paste("Input Files/",sites[i],"Litterbag/",sites[i],".csv",sep=""))
-    #remove NA
-    site_leaves <- subset(site_leaves, TIMES != "NA")
+  
+    ### Timeseries data for litterbag layer (unprotected pools only)
+    # add spp as colnames
+    colnames(MainFunction$litterbag_uFastC) <- t(sitedata[,1])
+    colnames(MainFunction$litterbag_uSlowC) <- t(sitedata[,1])
+    colnames(MainFunction$litterbag_uNecroC) <- t(sitedata[,1])
+    colnames(MainFunction$litterbag_uFastN) <- t(sitedata[,1])
+    colnames(MainFunction$litterbag_uSlowN) <- t(sitedata[,1])
+    colnames(MainFunction$litterbag_uNecroN) <- t(sitedata[,1])
+    colnames(MainFunction$litterbag_livingMicrobeC) <- t(sitedata[,1])
+    colnames(MainFunction$litterbag_inorganicN) <- t(sitedata[,1])
+    colnames(MainFunction$litterbag_CO2) <- t(sitedata[,1])
+    colnames(MainFunction$litterbag_livingMicrobeN) <- t(sitedata[,1])
     
-    #model C remaining
-    model_C_remaining <- MainFunction$litterbag_uFastC + MainFunction$litterbag_uSlowC + 
+    
+    # litterbag_uFastC
+    write.csv(MainFunction$litterbag_uFastC, paste(dir, sites[i], "_" , paramset, "_", "litterbag_uFastC.csv",sep=""), row.names = FALSE)
+
+    # litterbag_uSlowC
+    write.csv(MainFunction$litterbag_uSlowC, paste(dir, sites[i], "_" , paramset, "_", "litterbag_uSlowC.csv",sep=""), row.names = FALSE)
+
+    # litterbag_uNecroC
+    write.csv(MainFunction$litterbag_uNecroC, paste(dir, sites[i], "_" , paramset, "_", "litterbag_uNecroC.csv",sep=""), row.names = FALSE)
+
+    # litterbag_uFastN
+    write.csv(MainFunction$litterbag_uFastN, paste(dir, sites[i], "_" , paramset, "_", "litterbag_uFastN.csv",sep=""), row.names = FALSE)
+
+    # litterbag_uSlowN
+    write.csv(MainFunction$litterbag_uSlowN, paste(dir, sites[i], "_" , paramset, "_", "litterbag_uSlowN.csv",sep=""), row.names = FALSE)
+
+    # litterbag_uNecroN
+    write.csv(MainFunction$litterbag_uNecroN, paste(dir, sites[i], "_" , paramset, "_", "litterbag_uNecroN.csv",sep=""), row.names = FALSE)
+
+    # litterbag_livingMicrobeC
+    write.csv(MainFunction$litterbag_livingMicrobeC, paste(dir, sites[i], "_" , paramset, "_", "litterbag_livingMicrobeC.csv",sep=""), row.names = FALSE)
+
+    # litterbag_inorganicN
+    write.csv(MainFunction$litterbag_inorganicN, paste(dir, sites[i], "_" , paramset, "_", "litterbag_inorganicN.csv",sep=""), row.names = FALSE)
+
+    # litterbag_CO2
+    write.csv(MainFunction$litterbag_CO2, paste(dir, sites[i], "_" , paramset, "_", "litterbag_CO2.csv",sep=""), row.names = FALSE)
+
+    # litterbag_livingMicrobeN
+    write.csv(MainFunction$litterbag_livingMicrobeN, paste(dir, sites[i], "_" , paramset, "_", "litterbag_livingMicrobeN.csv",sep=""), row.names = FALSE)
+
+    
+    #calculate total model C remaining in litterbag
+    C_mod_kgm2_daily <- MainFunction$litterbag_uFastC + MainFunction$litterbag_uSlowC + 
       MainFunction$litterbag_uNecroC + MainFunction$litterbag_livingMicrobeC
     
-    #add spp
-    colnames(model_C_remaining) <- t(site_leaves[,1])
+    #sum initial litterbag C pools to add as first row to C_mod_kgm2_daily
+    C_top <- t(litter_added$uFastC + litter_added$uSLowC + litter_added$livingMicrobeC)
     
-    #pull out model data at each point in lidet data: 
-    #matrix for which days to pull out data for 
-    modeldoy <- matrix(NA, max(site_lidet$DOY/365), nrow(site_leaves))
-    for (m in 1:nrow(site_leaves)){
-      spp1 <- subset(site_lidet, spp== as.character(site_leaves[m,1]))
+    # add initial C values as first row in C_mod_kgm2_daily
+    C_mod_kgm2_daily <- rbind(C_top, C_mod_kgm2_daily)
+    
+    #add spp as colnames
+    colnames(C_mod_kgm2_daily) <- t(sitedata[,1])
+    
+    # calculate percent C remaining at each time step based on initial C in leaves 
+    # initial C is very slightly greater than 1 because of microbial biomass C
+    # (because model output is in kg/m2 and we are analyzing percent remaining as in the LIDET field data)
+    # make a matrix to fill
+    C_mod_pct_daily <- matrix(NA, nrow = nrow(C_mod_kgm2_daily), ncol = nspp)
+    # name columns for each species
+    colnames(C_mod_pct_daily) <- t(sitedata[,1])
+    # fill in the matrix with percent C remaining at each time point
+    for (l in 1:nrow(C_mod_pct_daily)) {
+      C_mod_pct_daily[l,] <- C_mod_kgm2_daily[l,]/C_mod_kgm2_daily[1,]
+    }
+    
+    #make a matrix with the day of each LIDET sampling time for each species (cumulative day for entire LIDET experiment)
+    #matrix will be used to pull out model data from the same cumulative day as the field data
+    modeldoy <- matrix(NA, max(site_lidet$DOY/365), nrow(sitedata))
+    for (m in 1:nrow(sitedata)){
+      spp1 <- subset(site_lidet, spp == as.character(sitedata[m,1]))
       modeldoy[spp1$time,m] <- spp1$DOY
     }
     
-    #Make an empty matrix to fill in C remaining data
-    modelmassremaining <- matrix(NA, max(site_lidet$DOY/365), nrow(site_leaves))
-    #Code that writes 
+    #YEARLY data: Make a matrix of C remaining data (kg/m2) for each year of LIDET sampling
+    C_mod_kgm2_yearly <- matrix(NA, max(site_lidet$DOY/365), nrow(sitedata))
+    #pull out the day of model data from the daily data table to match the yearly LIDET data sampling day 
     for (m in 1:round(max(site_lidet$DOY)/365)){
-      for (n in 1:nrow(site_leaves)){
-        modelmassremaining[m,n] <- model_C_remaining[floor(modeldoy[m,n]),n]
+      for (n in 1:nrow(sitedata)){
+        C_mod_kgm2_yearly[m,n] <- C_mod_kgm2_daily[floor(modeldoy[m,n]),n]
+      }    }
+    # name columns for each species
+    colnames(C_mod_kgm2_yearly) <- t(sitedata[,1])
+    
+    
+    #YEARLY data: Make a matrix of C remaining data (% remaining) for each year of LIDET sampling
+    C_mod_pct_yearly <- matrix(NA, max(site_lidet$DOY/365), nrow(sitedata))
+    #pull out the day of model data from the daily data table to match the yearly LIDET data sampling day 
+    for (m in 1:round(max(site_lidet$DOY)/365)){
+      for (n in 1:nrow(sitedata)){
+        C_mod_pct_yearly[m,n] <- C_mod_pct_daily[floor(modeldoy[m,n]),n]
+      }    }
+    # name columns for each species
+    colnames(C_mod_pct_yearly) <- t(sitedata[,1])
+    
+    
+    #calculate total model N remaining
+    N_mod_kgm2_daily <- MainFunction$litterbag_uFastN + MainFunction$litterbag_uSlowN + 
+      MainFunction$litterbag_uNecroN + MainFunction$litterbag_livingMicrobeN
+    
+    #sum initial litterbag N pools to add as first row to N_mod_kgm2_daily, transpose to row
+    N_top <- t(litter_added$uFastN + litter_added$uSlowN + litter_added$livingMicrobeN)
+    
+    # add initial N values as first row in N_mod_kgm2_daily
+    N_mod_kgm2_daily <- rbind(N_top, N_mod_kgm2_daily)
+    
+    #add spp as colnames
+    colnames(N_mod_kgm2_daily) <- t(sitedata[,1])
+    
+    # calculate percent N remaining at each time step based on initial N in leaves 
+    # initial N was calculated based on C:N of leaves so it varies widely. Initial total C was always 1.0001
+    # (because model output is in kg/m2 and we are analyzing percent remaining as in the LIDET field data)
+    # make a matrix to fill
+    N_mod_pct_daily <- matrix(NA, nrow = nrow(N_mod_kgm2_daily), ncol = nspp)
+    # name columns for each species
+    colnames(N_mod_pct_daily) <- t(sitedata[,1])
+    # fill in the matrix with percent N remaining at each time point
+    for (l in 1:nrow(N_mod_pct_daily)) {
+      N_mod_pct_daily[l,] <- N_mod_kgm2_daily[l,]/N_mod_kgm2_daily[1,]
+    }
+    
+    #YEARLY data: Make a matrix of N remaining data (kg/m2) for each year of LIDET sampling
+    #use the "modeldoy" matrix that was made for the C data above to pull out model data at each point in lidet data
+    #modeldoy is used to pull out model data from the same cumulative day as the field data
+    N_mod_kgm2_yearly <- matrix(NA, max(site_lidet$DOY/365), nrow(sitedata))
+    # name columns for each species
+    colnames(N_mod_kgm2_yearly) <- t(sitedata[,1])
+    #pull out the day of model data from the daily data table to match the yearly LIDET data sampling day 
+    for (m in 1:round(max(site_lidet$DOY)/365)){
+      for (n in 1:nrow(sitedata)){
+        N_mod_kgm2_yearly[m,n] <- N_mod_kgm2_daily[floor(modeldoy[m,n]),n]
       }    }
     
-    #Matrix that will write all data points cumulative of spp for getting r2 values
-    spp1 <- subset(site_lidet,spp== as.character(site_leaves[1,1]))
-    #converts 
-    lidetvals <- as.matrix(spp1$mass_remaining/100)
-    #set up matrix for 10yrs of data to be filled in
-    NAs <- matrix(NA, 9, 1)
-    lidetvals <- rbind(lidetvals,NAs)
-    #Subset other leaves
-    for (m in 2:nrow(site_leaves)){
-      spp1 <- subset(site_lidet,spp== as.character(site_leaves[m,1]))
-      fielddata <- (spp1$mass_remaining)/100
-      length(fielddata) <- nrow(lidetvals)
-      lidetvals <- cbind(lidetvals, fielddata)
-    }
+    #YEARLY data: Make a matrix of N remaining data (% remaining) for each year of LIDET sampling
+    N_mod_pct_yearly <- matrix(NA, max(site_lidet$DOY/365), nrow(sitedata))
+    # name columns for each species
+    colnames(N_mod_pct_yearly) <- t(sitedata[,1])
+    #pull out the day of model data from the daily data table to match the yearly LIDET data sampling day 
+    for (m in 1:round(max(site_lidet$DOY)/365)){
+      for (n in 1:nrow(sitedata)){
+        N_mod_pct_yearly[m,n] <- N_mod_pct_daily[floor(modeldoy[m,n]),n]
+      }    }
     
-    #make model mass remaining one column for model and data
-    modelvals <- as.matrix(modelmassremaining[,1])
-    datavals <- as.matrix(lidetvals[,1])
-    for(m in 2:ncol(modelmassremaining)){
-      modelvals <- rbind(modelvals,as.matrix(modelmassremaining[,m]))
-      datavals <- rbind(datavals,as.matrix(lidetvals[,m]))
-      modelvals <- na.omit(modelvals)
-      datavals <- na.omit(datavals)
-    }
     
-    #get 2 columns for model v data
-    alldata <- cbind(modelvals, datavals)
-    
-    write.csv(alldata, paste(dir2,"/comp model v observed.csv",sep=""))
-    #write.csv(paramvals,paste(dir2,"/paramvals.csv",sep=""))
-    write.csv(modelmassremaining, paste(dir2, "/model.csv", sep=""))
-    write.csv(lidetvals, paste(dir2, "/observed.csv", sep=""))
-
+    # Save C Data
+    # model yearly C data in kg/m2
+    write.csv(C_mod_kgm2_yearly,
+             paste(dir, sites [i], "_", paramset, "_C_mod_kgm2_yearly.csv", sep=""))
   
+    # model yearly C data in % remaining
+    write.csv(C_mod_pct_yearly,
+              paste(dir, sites[i], "_", paramset, "_C_mod_pct_yearly.csv", sep=""))
+    
+    # model daily C data in kg/m2
+    #add a day of year column, nyr column, and site column 
+    exportC_day_kgm2 <- as.data.frame(C_mod_kgm2_daily)
+    exportC_day_kgm2$cumday <- 0:(nyears*365)
+    exportC_day_kgm2$nyr <- c(0, rep(1:nyears, each = 365))
+    exportC_day_kgm2$doy <- c(0, rep_len(1:365, length.out=nrow(C_mod_kgm2_daily)-1))
+    exportC_day_kgm2$site <- sites[i]
+    write.csv(exportC_day_kgm2, 
+              paste(dir, sites[i], "_", paramset, "_C_mod_kgm2_daily.csv",sep=""),
+              row.names = FALSE) #daily model data
+    
+    # model daily C data in % remaining
+    #add a day of year column, nyr column, and site column 
+    exportC_day_pct <- as.data.frame(C_mod_pct_daily)
+    exportC_day_pct$cumday <- 0:(nyears*365)
+    exportC_day_pct$nyr <- c(0, rep(1:nyears, each = 365))
+    exportC_day_pct$doy <- c(0, rep_len(1:365, length.out=nrow(C_mod_pct_daily)-1))
+    exportC_day_pct$site <- sites[i]
+    write.csv(exportC_day_pct, 
+              paste(dir, sites[i], "_", paramset, "_C_mod_pct_daily.csv", sep=""),
+              row.names = FALSE) #daily model data
+  
+    
+    # Save N Data
+    # model yearly N data in kg/m2
+    write.csv(N_mod_kgm2_yearly,
+              paste(dir, sites[i], "_", paramset, "_N_mod_kgm2_yearly.csv",sep=""))
+    
+    # model yearly N data in % remaining
+    write.csv(N_mod_pct_yearly,
+              paste(dir, sites[i], "_", paramset, "_N_mod_pct_yearly.csv",sep=""))
+    
+    # model daily N data in kg/m2
+    #add a day of year column, nyr column, and site column 
+    exportN_day_kgm2 <- as.data.frame(N_mod_kgm2_daily)
+    exportN_day_kgm2$cumday <- 0:(nyears*365)
+    exportN_day_kgm2$nyr <- c(0, rep(1:nyears, each = 365))
+    exportN_day_kgm2$doy <- c(0, rep_len(1:365, length.out=nrow(N_mod_kgm2_daily)-1))
+    exportN_day_kgm2$site <- sites[i]
+    write.csv(exportN_day_kgm2, 
+              paste(dir, sites[i], "_", paramset, "_N_mod_kgm2_daily.csv", sep = ""),
+              row.names = FALSE) #daily model data
+    
+    # model daily N data in % remaining
+    #add a day of year column, nyr column, and site column 
+    exportN_day_pct <- as.data.frame(N_mod_pct_daily)
+    exportN_day_pct$cumday <- 0:(nyears*365)
+    exportN_day_pct$nyr <- c(0, rep(1:nyears, each = 365))
+    exportN_day_pct$doy <- c(0, rep_len(1:365, length.out=nrow(N_mod_pct_daily)-1))
+    exportN_day_pct$site <- sites[i]
+    write.csv(exportN_day_pct, 
+              paste(dir, sites[i], "_", paramset, "_N_mod_pct_daily.csv", sep = ""),
+              row.names = FALSE) #daily model data
+    
+    
   }
-  
-  
-  # Change the column headers in the exported results files to be the leaf species at each site
-  
-  for(i in 1:length(sites)){
-    
-    #Record of leaves used at each site
-    Leaf_Data<-read.csv(paste("Input Files/",sites[i],"Litterbag/",sites[i],".csv",sep=""))
-    
-    #Remove NAs
-    Leaf_Data<-Leaf_Data[complete.cases(Leaf_Data),]
-    
-    #Bring in model v. observed datasets: 
-    Mod<-read.csv(paste("results_BESTparams/",sites[i],"results/model.csv",sep=""))
-    Obs<-read.csv(paste("results_BESTparams/",sites[i],"results/observed.csv",sep=""))
-    
-    #Remove auto formatting columns
-    Mod<-subset(Mod,select=-X)
-    Obs<-subset(Obs,select=-X)
-    
-    #Rename columns by leaf species
-    colnames(Mod)<-Leaf_Data$SPP
-    colnames(Obs)<-Leaf_Data$SPP
-    
-    #Rewrite files
-    write.csv(Mod,paste("results_BESTparams/",sites[i],"results/model.csv",sep=""))
-    write.csv(Obs,paste("results_BESTparams/",sites[i],"results/observed.csv",sep=""))
-    
-  }
-  
   
